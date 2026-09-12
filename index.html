@@ -1,0 +1,496 @@
+const express = require("express");
+const { Readable } = require("stream");
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
+
+app.use(express.json({ limit: "1mb" }));
+
+const HTML = `<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARSLAN AI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
+body{
+ min-height:100vh;padding:20px;display:flex;justify-content:center;align-items:center;
+ background:radial-gradient(circle at top left,#7117d8,transparent 35%),
+ radial-gradient(circle at bottom right,#087cff,transparent 35%),
+ linear-gradient(135deg,#080b19,#111936);color:#fff
+}
+.card{
+ width:100%;max-width:540px;padding:25px;border-radius:28px;
+ background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+ backdrop-filter:blur(20px);box-shadow:0 25px 70px rgba(0,0,0,.45)
+}
+.logo{
+ text-align:center;font-size:36px;font-weight:900;
+ background:linear-gradient(90deg,#00eaff,#ff00d4,#ffd000);
+ -webkit-background-clip:text;-webkit-text-fill-color:transparent
+}
+.sub{text-align:center;color:#d8dced;margin:8px 0 25px}
+input{
+ width:100%;padding:17px;border:0;outline:0;border-radius:16px;
+ background:rgba(255,255,255,.13);color:#fff;font-size:15px
+}
+input::placeholder{color:#bfc5da}
+.btn{
+ width:100%;padding:17px;margin-top:12px;border:0;border-radius:16px;
+ color:#fff;font-size:16px;font-weight:bold;cursor:pointer
+}
+.info{background:linear-gradient(90deg,#00bfff,#087cff)}
+.download{background:linear-gradient(90deg,#ff00c8,#6d18ff,#005eff)}
+.ai{background:linear-gradient(90deg,#00d4ff,#7c00ff)}
+.preview{
+ display:none;margin-top:18px;padding:16px;border-radius:18px;
+ background:rgba(0,0,0,.22)
+}
+.preview h3{margin-bottom:8px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+label{display:block;margin-bottom:7px;color:#d7dbed;font-size:13px}
+select{
+ width:100%;padding:15px;border:0;outline:0;border-radius:15px;
+ background:#20294d;color:#fff
+}
+.status{text-align:center;margin-top:15px;color:#dce0ef;min-height:20px}
+.progress{
+ display:none;margin-top:15px;height:9px;overflow:hidden;border-radius:20px;
+ background:rgba(255,255,255,.12)
+}
+.bar{
+ width:0;height:100%;
+ background:linear-gradient(90deg,#00eaff,#ff00d4);transition:.2s
+}
+.aiBox{
+ display:none;margin-top:18px;padding:16px;border-radius:18px;
+ background:rgba(0,0,0,.25);line-height:1.5
+}
+.notice{
+ margin-top:20px;padding:14px;border-radius:15px;
+ background:rgba(255,255,255,.07);color:#cdd2e5;
+ text-align:center;font-size:12px;line-height:1.5
+}
+.footer{text-align:center;color:#9da5c4;font-size:12px;margin-top:18px}
+@media(max-width:430px){
+ .card{padding:18px}.logo{font-size:30px}.grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+<div class="card">
+
+<div class="logo">⚡ ARSLAN AI</div>
+<div class="sub">Fast • Simple • High Quality Media Downloader</div>
+
+<input id="url" type="url"
+ placeholder="अपना authorized media URL डालें...">
+
+<button class="btn info" onclick="getInfo()">
+GET MEDIA INFO
+</button>
+
+<div id="preview" class="preview">
+<h3 id="title">Media</h3>
+<div id="mediaUrl"></div>
+</div>
+
+<div class="grid">
+
+<div>
+<label>Format</label>
+<select id="format">
+<option value="mp4">MP4 Video</option>
+<option value="mp3">MP3 Audio</option>
+</select>
+</div>
+
+<div>
+<label>Quality</label>
+<select id="quality">
+<option value="1080">1080p</option>
+<option value="720">720p</option>
+<option value="480">480p</option>
+<option value="360">360p</option>
+</select>
+</div>
+
+</div>
+
+<button class="btn download" onclick="downloadFile()">
+⬇ DOWNLOAD NOW
+</button>
+
+<button class="btn ai" onclick="askAI()">
+✨ ASK ARSLAN AI
+</button>
+
+<div id="progress" class="progress">
+<div id="bar" class="bar"></div>
+</div>
+
+<div id="status" class="status"></div>
+
+<div id="aiBox" class="aiBox">
+<b>ARSLAN AI:</b>
+<div id="aiText" style="margin-top:8px"></div>
+</div>
+
+<div class="notice">
+⚠️ केवल अपने या authorized content/media के लिए इस्तेमाल करें।
+Platform restrictions को bypass नहीं किया जाता।
+</div>
+
+<div class="footer">© 2026 ARSLAN AI</div>
+
+</div>
+
+<script>
+
+async function getInfo(){
+
+ const url=document.getElementById("url").value.trim();
+ const status=document.getElementById("status");
+
+ if(!url){
+  status.innerText="❌ पहले URL डालें";
+  return;
+ }
+
+ status.innerText="⏳ Media check हो रहा है...";
+
+ try{
+
+  const r=await fetch("/api/info",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({url})
+  });
+
+  const data=await r.json();
+
+  if(!r.ok) throw new Error(data.error||"Media information नहीं मिली");
+
+  document.getElementById("preview").style.display="block";
+  document.getElementById("title").innerText=data.title||"Authorized Media";
+  document.getElementById("mediaUrl").innerText=url;
+
+  status.innerText="✅ Media URL तैयार है";
+
+ }catch(e){
+  status.innerText="❌ "+e.message;
+ }
+}
+
+
+async function downloadFile(){
+
+ const url=document.getElementById("url").value.trim();
+ const format=document.getElementById("format").value;
+ const quality=document.getElementById("quality").value;
+
+ const status=document.getElementById("status");
+ const progress=document.getElementById("progress");
+ const bar=document.getElementById("bar");
+
+ if(!url){
+  status.innerText="❌ पहले URL डालें";
+  return;
+ }
+
+ progress.style.display="block";
+ bar.style.width="10%";
+ status.innerText="⏳ Download शुरू हो रहा है...";
+
+ try{
+
+  const r=await fetch("/api/download",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({url,format,quality})
+  });
+
+  if(!r.ok){
+
+   let msg="Download failed";
+
+   try{
+    const d=await r.json();
+    msg=d.error||msg;
+   }catch(e){}
+
+   throw new Error(msg);
+  }
+
+  bar.style.width="45%";
+  status.innerText="⏳ File प्राप्त हो रही है...";
+
+  const blob=await r.blob();
+
+  bar.style.width="85%";
+
+  const objectURL=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+
+  a.href=objectURL;
+  a.download=format==="mp3"
+   ?"arslan-audio.mp3"
+   :"arslan-video.mp4";
+
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  URL.revokeObjectURL(objectURL);
+
+  bar.style.width="100%";
+  status.innerText="✅ Download Complete";
+
+ }catch(e){
+
+  bar.style.width="0%";
+  status.innerText="❌ "+e.message;
+ }
+}
+
+
+async function askAI(){
+
+ const url=document.getElementById("url").value.trim();
+
+ const box=document.getElementById("aiBox");
+ const text=document.getElementById("aiText");
+ const status=document.getElementById("status");
+
+ if(!url){
+  status.innerText="❌ पहले URL डालें";
+  return;
+ }
+
+ box.style.display="block";
+ text.innerText="⏳ ARSLAN AI सोच रहा है...";
+
+ try{
+
+  const r=await fetch("/api/ai",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({
+    message:
+    "इस media URL के लिए छोटा professional title और description suggestion दो: "+url
+   })
+  });
+
+  const data=await r.json();
+
+  if(!r.ok) throw new Error(data.error||"AI request failed");
+
+  text.innerText=data.answer;
+
+ }catch(e){
+
+  text.innerText="❌ "+e.message;
+ }
+}
+
+</script>
+</body>
+</html>`;
+
+
+function validURL(value){
+
+ try{
+  const u=new URL(value);
+  return u.protocol==="http:" || u.protocol==="https:";
+ }catch{
+  return false;
+ }
+}
+
+
+app.get("/",(req,res)=>{
+ res.type("html").send(HTML);
+});
+
+
+app.post("/api/info",async(req,res)=>{
+
+ const {url}=req.body||{};
+
+ if(!validURL(url)){
+  return res.status(400).json({
+   error:"Valid media URL डालें"
+  });
+ }
+
+ res.json({
+  title:"Authorized Media",
+  url
+ });
+});
+
+
+app.post("/api/download",async(req,res)=>{
+
+ const {url,format,quality}=req.body||{};
+
+ if(!validURL(url)){
+  return res.status(400).json({
+   error:"Invalid URL"
+  });
+ }
+
+ if(!["mp4","mp3"].includes(format)){
+  return res.status(400).json({
+   error:"Invalid format"
+  });
+ }
+
+ if(!["1080","720","480","360"].includes(String(quality))){
+  return res.status(400).json({
+   error:"Invalid quality"
+  });
+ }
+
+ try{
+
+  const response=await fetch(url);
+
+  if(!response.ok){
+   return res.status(400).json({
+    error:"Media file उपलब्ध नहीं है"
+   });
+  }
+
+  const contentType=
+   response.headers.get("content-type")||
+   "application/octet-stream";
+
+  const filename=
+   format==="mp3"
+   ?"arslan-audio.mp3"
+   :"arslan-video.mp4";
+
+  res.setHeader("Content-Type",contentType);
+  res.setHeader(
+   "Content-Disposition",
+   'attachment; filename="'+filename+'"'
+  );
+
+  if(response.body){
+
+   Readable
+    .fromWeb(response.body)
+    .pipe(res);
+
+  }else{
+
+   const buffer=Buffer.from(
+    await response.arrayBuffer()
+   );
+
+   res.end(buffer);
+  }
+
+ }catch(error){
+
+  console.error(error);
+
+  res.status(500).json({
+   error:"Download server error"
+  });
+ }
+});
+
+
+app.post("/api/ai",async(req,res)=>{
+
+ const {message}=req.body||{};
+
+ if(!message){
+  return res.status(400).json({
+   error:"Message required"
+  });
+ }
+
+ if(!OPENROUTER_API_KEY){
+  return res.status(500).json({
+   error:"OPENROUTER_API_KEY server में सेट नहीं है"
+  });
+ }
+
+ try{
+
+  const response=await fetch(
+   "https://openrouter.ai/api/v1/chat/completions",
+   {
+    method:"POST",
+
+    headers:{
+     "Authorization":
+      "Bearer "+OPENROUTER_API_KEY,
+     "Content-Type":"application/json",
+     "HTTP-Referer":
+      "http://localhost:"+PORT,
+     "X-Title":"ARSLAN AI"
+    },
+
+    body:JSON.stringify({
+
+     model:"openai/gpt-4o-mini",
+
+     messages:[
+      {
+       role:"system",
+       content:
+       "You are ARSLAN AI. Give concise and useful answers."
+      },
+      {
+       role:"user",
+       content:message
+      }
+     ]
+    })
+   }
+  );
+
+  const data=await response.json();
+
+  if(!response.ok){
+
+   return res.status(response.status).json({
+    error:
+     data?.error?.message||
+     "OpenRouter request failed"
+   });
+  }
+
+  const answer=
+   data?.choices?.[0]?.message?.content||
+   "AI response नहीं मिला";
+
+  res.json({answer});
+
+ }catch(error){
+
+  console.error(error);
+
+  res.status(500).json({
+   error:"AI server error"
+  });
+ }
+});
+
+
+app.listen(PORT,()=>{
+ console.log("");
+ console.log("================================");
+ console.log("⚡ ARSLAN AI READY");
+ console.log("🌐 http://localhost:"+PORT);
+ console.log("================================");
+ console.log("");
+});
