@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="theme-color" content="#11152d">
+
+<title>ARSLAN AI Downloader</title>
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Arial,Helvetica,sans-serif;
+}
+
+body{
+  min-height:100vh;
+  color:#fff;
+  padding:18px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:
+    radial-gradient(circle at 10% 10%,#7518d9 0%,transparent 35%),
+    radial-gradient(circle at 90% 90%,#087cff 0%,transparent 35%),
+    linear-gradient(135deg,#070916,#111832);
+}
+
+.app{
+  width:100%;
+  max-width:520px;
+  padding:25px;
+  border-radius:30px;
+  background:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.20);
+  box-shadow:0 25px 70px rgba(0,0,0,.5);
+  backdrop-filter:blur(22px);
+}
+
+.logo{
+  text-align:center;
+  font-size:38px;
+  font-weight:900;
+  letter-spacing:.5px;
+  background:linear-gradient(
+    90deg,
+    #00eaff,
+    #ff00d4,
+    #ffd000
+  );
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+
+.tagline{
+  text-align:center;
+  color:#d9dced;
+  font-size:14px;
+  margin-top:8px;
+  margin-bottom:24px;
+}
+
+.url{
+  width:100%;
+  height:56px;
+  padding:0 17px;
+  border:1px solid rgba(255,255,255,.12);
+  outline:none;
+  border-radius:17px;
+  background:rgba(255,255,255,.12);
+  color:#fff;
+  font-size:15px;
+}
+
+.url::placeholder{
+  color:#bfc5d9;
+}
+
+.get{
+  width:100%;
+  height:56px;
+  margin-top:12px;
+  border:0;
+  border-radius:17px;
+  color:#fff;
+  font-size:16px;
+  font-weight:700;
+  cursor:pointer;
+  background:linear-gradient(
+    90deg,
+    #00cfff,
+    #087cff
+  );
+}
+
+.card{
+  display:none;
+  margin-top:18px;
+  padding:17px;
+  border-radius:19px;
+  background:rgba(0,0,0,.25);
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.card h3{
+  font-size:18px;
+  margin-bottom:8px;
+}
+
+.card p{
+  color:#cdd2e4;
+  font-size:13px;
+  line-height:1.5;
+  word-break:break-word;
+}
+
+.options{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:18px;
+}
+
+.field label{
+  display:block;
+  color:#d8dced;
+  font-size:13px;
+  margin-bottom:7px;
+}
+
+select{
+  width:100%;
+  height:52px;
+  padding:0 14px;
+  border:0;
+  outline:none;
+  border-radius:15px;
+  background:#20294d;
+  color:#fff;
+  font-size:14px;
+}
+
+.download{
+  width:100%;
+  height:58px;
+  margin-top:18px;
+  border:0;
+  border-radius:18px;
+  color:#fff;
+  font-size:17px;
+  font-weight:800;
+  cursor:pointer;
+  background:linear-gradient(
+    90deg,
+    #ff00c8,
+    #851cff,
+    #005eff
+  );
+  box-shadow:0 12px 35px rgba(80,30,255,.3);
+}
+
+.download:active,
+.get:active{
+  transform:scale(.98);
+}
+
+.status{
+  min-height:22px;
+  text-align:center;
+  margin-top:15px;
+  color:#dfe3f1;
+  font-size:14px;
+}
+
+.progress{
+  display:none;
+  height:9px;
+  margin-top:12px;
+  overflow:hidden;
+  border-radius:20px;
+  background:rgba(255,255,255,.12);
+}
+
+.progressBar{
+  width:0%;
+  height:100%;
+  border-radius:20px;
+  background:linear-gradient(
+    90deg,
+    #00eaff,
+    #ff00d4
+  );
+  transition:width .25s;
+}
+
+.history{
+  margin-top:20px;
+  padding:15px;
+  border-radius:17px;
+  background:rgba(255,255,255,.06);
+}
+
+.history h4{
+  margin-bottom:10px;
+}
+
+.historyItem{
+  padding:10px;
+  margin-top:7px;
+  border-radius:10px;
+  background:rgba(0,0,0,.18);
+  color:#cdd2e4;
+  font-size:12px;
+  word-break:break-word;
+}
+
+.notice{
+  margin-top:20px;
+  padding:14px;
+  border-radius:16px;
+  background:rgba(255,255,255,.07);
+  color:#cdd2e4;
+  text-align:center;
+  font-size:12px;
+  line-height:1.6;
+}
+
+.footer{
+  text-align:center;
+  margin-top:18px;
+  color:#969fbd;
+  font-size:12px;
+}
+
+@media(max-width:430px){
+  body{
+    padding:10px;
+  }
+
+  .app{
+    padding:18px;
+    border-radius:25px;
+  }
+
+  .logo{
+    font-size:31px;
+  }
+
+  .options{
+    grid-template-columns:1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <div class="logo">
+    ⚡ ARSLAN AI
+  </div>
+
+  <div class="tagline">
+    Fast • Simple • High Quality Media Downloader
+  </div>
+
+  <input
+    id="url"
+    class="url"
+    type="url"
+    autocomplete="off"
+    placeholder="अपना authorized media URL डालें..."
+  >
+
+  <button
+    class="get"
+    onclick="checkMedia()">
+    GET MEDIA INFO
+  </button>
+
+  <div
+    id="info"
+    class="card">
+
+    <h3>
+      🎬 Media Ready
+    </h3>
+
+    <p id="infoText">
+      Media URL तैयार है।
+    </p>
+
+  </div>
+
+  <div class="options">
+
+    <div class="field">
+
+      <label>
+        Format
+      </label>
+
+      <select id="format">
+
+        <option value="mp4">
+          MP4 Video
+        </option>
+
+        <option value="mp3">
+          MP3 Audio
+        </option>
+
+      </select>
+
+    </div>
+
+    <div class="field">
+
+      <label>
+        Quality
+      </label>
+
+      <select id="quality">
+
+        <option value="1080">
+          1080p
+        </option>
+
+        <option value="720">
+          720p
+        </option>
+
+        <option value="480">
+          480p
+        </option>
+
+        <option value="360">
+          360p
+        </option>
+
+      </select>
+
+    </div>
+
+  </div>
+
+  <button
+    class="download"
+    onclick="downloadMedia()">
+
+    ⬇ DOWNLOAD NOW
+
+  </button>
+
+  <div
+    id="progress"
+    class="progress">
+
+    <div
+      id="progressBar"
+      class="progressBar">
+    </div>
+
+  </div>
+
+  <div
+    id="status"
+    class="status">
+  </div>
+
+  <div class="history">
+
+    <h4>
+      📁 Recent Downloads
+    </h4>
+
+    <div id="historyList">
+      अभी कोई download नहीं है।
+    </div>
+
+  </div>
+
+  <div class="notice">
+
+    ⚠️ इस वेबसाइट का इस्तेमाल केवल अपने या
+    authorized media/content के लिए करें।
+    यह platform restrictions को bypass नहीं करती।
+
+  </div>
+
+  <div class="footer">
+    © 2026 ARSLAN AI
+  </div>
+
+</div>
+
+
+<script>
+
+const urlInput =
+  document.getElementById("url");
+
+const info =
+  document.getElementById("info");
+
+const infoText =
+  document.getElementById("infoText");
+
+const status =
+  document.getElementById("status");
+
+const progress =
+  document.getElementById("progress");
+
+const progressBar =
+  document.getElementById("progressBar");
+
+const historyList =
+  document.getElementById("historyList");
+
+
+function validURL(value){
+
+  try{
+
+    const u =
+      new URL(value);
+
+    return (
+      u.protocol === "http:" ||
+      u.protocol === "https:"
+    );
+
+  }catch(e){
+
+    return false;
+
+  }
+
+}
+
+
+function checkMedia(){
+
+  const url =
+    urlInput.value.trim();
+
+  if(!url){
+
+    status.innerText =
+      "❌ पहले URL डालें।";
+
+    info.style.display =
+      "none";
+
+    return;
+
+  }
+
+  if(!validURL(url)){
+
+    status.innerText =
+      "❌ सही URL डालें।";
+
+    info.style.display =
+      "none";
+
+    return;
+
+  }
+
+  info.style.display =
+    "block";
+
+  infoText.innerText =
+    url;
+
+  status.innerText =
+    "✅ Media URL तैयार है।";
+
+}
+
+
+async function downloadMedia(){
+
+  const url =
+    urlInput.value.trim();
+
+  const format =
+    document.getElementById(
+      "format"
+    ).value;
+
+  const quality =
+    document.getElementById(
+      "quality"
+    ).value;
+
+
+  if(!url){
+
+    status.innerText =
+      "❌ पहले URL डालें।";
+
+    return;
+
+  }
+
+
+  if(!validURL(url)){
+
+    status.innerText =
+      "❌ यह valid media URL नहीं है।";
+
+    return;
+
+  }
+
+
+  progress.style.display =
+    "block";
+
+  progressBar.style.width =
+    "10%";
+
+  status.innerText =
+    "⏳ Download तैयार हो रहा है...";
+
+
+  try{
+
+    /*
+      GitHub Pages पर कोई backend नहीं होता।
+      इसलिए यहाँ direct media URL को browser
+      के जरिए डाउनलोड करने की कोशिश की जाती है.
+    */
+
+    progressBar.style.width =
+      "35%";
+
+
+    const response =
+      await fetch(url, {
+        mode:"cors"
+      });
+
+
+    if(!response.ok){
+
+      throw new Error(
+        "Media file browser से उपलब्ध नहीं है।"
+      );
+
+    }
+
+
+    progressBar.style.width =
+      "60%";
+
+
+    const blob =
+      await response.blob();
+
+
+    progressBar.style.width =
+      "85%";
+
+
+    const objectURL =
+      URL.createObjectURL(blob);
+
+
+    const a =
+      document.createElement("a");
+
+
+    a.href =
+      objectURL;
+
+
+    const extension =
+      format === "mp3"
+      ? "mp3"
+      : "mp4";
+
+
+    a.download =
+      "ARSLAN-AI-" +
+      quality +
+      "p." +
+      extension;
+
+
+    document.body.appendChild(a);
+
+    a.click();
+
+    a.remove();
+
+
+    setTimeout(()=>{
+
+      URL.revokeObjectURL(
+        objectURL
+      );
+
+    },1000);
+
+
+    progressBar.style.width =
+      "100%";
+
+    status.innerText =
+      "✅ Download Complete";
+
+
+    addHistory(
+      url,
+      format,
+      quality
+    );
+
+
+  }catch(error){
+
+    progressBar.style.width =
+      "0%";
+
+    status.innerText =
+      "❌ Download नहीं हो सका। Direct media URL इस्तेमाल करें।";
+
+  }
+
+}
+
+
+function addHistory(
+  url,
+  format,
+  quality
+){
+
+  if(
+    historyList.innerText.trim() ===
+    "अभी कोई download नहीं है।"
+  ){
+
+    historyList.innerHTML =
+      "";
+
+  }
+
+
+  const item =
+    document.createElement("div");
+
+  item.className =
+    "historyItem";
+
+
+  item.innerText =
+    "✓ " +
+    format.toUpperCase() +
+    " • " +
+    quality +
+    "p • " +
+    url;
+
+
+  historyList.prepend(
+    item
+  );
+
+}
+
+
+urlInput.addEventListener(
+  "keydown",
+  function(event){
+
+    if(event.key === "Enter"){
+
+      checkMedia();
+
+    }
+
+  }
+);
+
+</script>
+
+</body>
+</html>
